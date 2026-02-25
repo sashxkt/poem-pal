@@ -1,0 +1,50 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  poems        Poem[]
+  deliveries   PoemDelivery[] @relation("RecipientDeliveries")
+}
+
+model Poem {
+  id         String         @id @default(cuid())
+  content    String
+  date       String         // "YYYY-MM-DD" UTC date
+  createdAt  DateTime       @default(now())
+  author     User           @relation(fields: [authorId], references: [id])
+  authorId   String
+  deliveries PoemDelivery[]
+
+  @@unique([authorId, date])
+}
+
+model PoemDelivery {
+  id          String    @id @default(cuid())
+  recipient   User      @relation("RecipientDeliveries", fields: [recipientId], references: [id])
+  recipientId String
+  poem        Poem      @relation(fields: [poemId], references: [id])
+  poemId      String
+  deliveredAt DateTime  @default(now())
+  hasRead     Boolean   @default(false)
+  comment     Comment?
+
+  @@unique([recipientId, poemId])
+}
+
+model Comment {
+  id             String       @id @default(cuid())
+  content        String
+  createdAt      DateTime     @default(now())
+  delivery       PoemDelivery @relation(fields: [deliveryId], references: [id])
+  deliveryId     String       @unique
+}
